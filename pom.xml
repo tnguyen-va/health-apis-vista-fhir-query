@@ -10,6 +10,7 @@
   <version>0.0.18-SNAPSHOT</version>
   <packaging>pom</packaging>
   <modules>
+    <module>vista-fhir-query-ids-mapping</module>
     <module>vista-fhir-query</module>
     <module>vista-fhir-query-mock-services</module>
     <module>vista-fhir-query-tests</module>
