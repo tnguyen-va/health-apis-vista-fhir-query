@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toMap;
 
 import gov.va.api.health.ids.api.IdentityService;
 import gov.va.api.health.ids.api.IdentitySubstitution;
+import gov.va.api.health.ids.api.ResourceIdentity;
 import gov.va.api.health.r4.api.bundle.AbstractBundle;
 import gov.va.api.health.r4.api.bundle.AbstractEntry;
 import gov.va.api.health.r4.api.resources.Resource;
@@ -37,7 +38,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 @Slf4j
 @ControllerAdvice
 public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedReference>
-    implements ResponseBodyAdvice<Object> {
+    implements ResponseBodyAdvice<Object>, WitnessProtection {
 
   private final Map<Type, WitnessProtectionAgent<?>> agents;
 
@@ -79,7 +80,7 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
     return protect(body);
   }
 
-  Object protect(Object body) {
+  <T> T protect(T body) {
     if (body instanceof AbstractBundle<?>) {
       protectBundle((AbstractBundle<?>) body);
     } else if (body instanceof Resource) {
@@ -138,5 +139,13 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
       @org.springframework.lang.NonNull Class<? extends HttpMessageConverter<?>> converterType) {
     return AbstractBundle.class.isAssignableFrom(returnType.getParameterType())
         || Resource.class.isAssignableFrom(returnType.getParameterType());
+  }
+
+  @Override
+  public String toPrivateId(String publicId) {
+    return identityService.lookup(publicId).stream()
+        .map(ResourceIdentity::identifier)
+        .findFirst()
+        .orElse(publicId);
   }
 }

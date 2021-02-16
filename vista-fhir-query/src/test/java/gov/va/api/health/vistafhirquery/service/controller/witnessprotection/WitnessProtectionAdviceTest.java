@@ -26,7 +26,7 @@ class WitnessProtectionAdviceTest {
   @Mock IdentityService identityService;
 
   @Test
-  public void bundleOfMixedResourcesIsProtected() {
+  void bundleOfMixedResourcesIsProtected() {
     var f11 = FugaziOne.builder().id("private-f11").build();
     var f12 = FugaziOne.builder().id("private-f12").build();
     var f21 = FugaziTwo.builder().id("private-f21").build();
@@ -56,21 +56,23 @@ class WitnessProtectionAdviceTest {
     assertThat(ef22.fullUrl()).isEqualTo("http://fugazi.com/fugazi/FugaziTwo/public-f22");
   }
 
+  private ResourceIdentity identity(String resource, String baseId) {
+    return ResourceIdentity.builder()
+        .system("VISTA")
+        .resource(resource)
+        .identifier("private-" + baseId)
+        .build();
+  }
+
   private Registration registration(String resource, String baseId) {
     return Registration.builder()
         .uuid("public-" + baseId)
-        .resourceIdentities(
-            List.of(
-                ResourceIdentity.builder()
-                    .system("VISTA")
-                    .resource(resource)
-                    .identifier("private-" + baseId)
-                    .build()))
+        .resourceIdentities(List.of(identity(resource, baseId)))
         .build();
   }
 
   @Test
-  public void singleResourceIsProtected() {
+  void singleResourceIsProtected() {
     when(identityService.register(any())).thenReturn(List.of(registration("FugaziOne", "f1")));
     var f1 = FugaziOne.builder().id("private-f1").build();
     wp().protect(f1);
@@ -80,6 +82,13 @@ class WitnessProtectionAdviceTest {
     var f2 = FugaziTwo.builder().id("private-f2").build();
     wp().protect(f2);
     assertThat(f2.id()).isEqualTo("public-f2");
+  }
+
+  @Test
+  void toPrivateIdReturnsPrivateIdDuh() {
+    when(identityService.lookup("public-f1")).thenReturn(List.of(identity("WHATEVER", "f1")));
+    assertThat(wp().toPrivateId("public-f1")).isEqualTo("private-f1");
+    assertThat(wp().toPrivateId("unknown-f1")).isEqualTo("unknown-f1");
   }
 
   @Test

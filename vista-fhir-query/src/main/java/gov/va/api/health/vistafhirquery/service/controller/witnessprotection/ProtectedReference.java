@@ -13,6 +13,9 @@ import lombok.Getter;
 @Builder
 @Getter
 public class ProtectedReference {
+
+  public static final String VISTA_SYSTEM = "VISTA";
+
   private final String type;
 
   private final String id;
@@ -74,7 +77,7 @@ public class ProtectedReference {
   /** Convert this object into a resource identity. This method always returns a non-empty value. */
   public Optional<ResourceIdentity> asResourceIdentity() {
     return Optional.of(
-        ResourceIdentity.builder().system("VISTA").resource(type).identifier(id).build());
+        ResourceIdentity.builder().system(VISTA_SYSTEM).resource(type).identifier(id).build());
   }
 
   public void updateId(Optional<String> id) {

@@ -85,6 +85,16 @@ comment() {
   cat >> $target
 }
 
+addValue() {
+  local project="$1"
+  local profile="$2"
+  local key="$3"
+  local value="$4"
+  local target="$REPO/$project/config/application-${profile}.properties"
+  local escapedValue=$(echo $value | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')
+  echo "$key=$escapedValue" >> $target
+}
+
 configValue() {
   local project="$1"
   local profile="$2"
@@ -117,7 +127,11 @@ EOF
   configValue vista-fhir-query $PROFILE vista-fhir-query.internal.client-keys "disabled"
   configValue vista-fhir-query $PROFILE vista-fhir-query.public-url "http://localhost:8095"
   configValue vista-fhir-query $PROFILE vista-fhir-query.public-r4-base-path "r4"
+  configValue vista-fhir-query $PROFILE identityservice.encodingKey fhir-query
+  configValue vista-fhir-query $PROFILE identityservice.patientIdPattern "[0-9]+(V[0-9]{6})?"
   checkForUnsetValues vista-fhir-query $PROFILE
+
+  addValue vista-fhir-query $PROFILE management.endpoints.web.exposure.include "health,info,i2"
 }
 
 requiredParam() {
