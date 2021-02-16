@@ -51,6 +51,10 @@ main() {
   [ ! -f "$SECRETS" ] && usage "File not found: $SECRETS"
   . $SECRETS
 
+  # Support values as configured in Shanktosecrets
+  if [ -z "${VISTALINK_ACCESS_CODE:-}" ]; then export VISTALINK_ACCESS_CODE=${VISTA_ACCESS_CODE:-}; fi
+  if [ -z "${VISTALINK_VERIFY_CODE:-}" ]; then export VISTALINK_VERIFY_CODE=${VISTA_VERIFY_CODE:-}; fi
+  
   MISSING_SECRETS=false
   requiredParam VISTALINK_URL "$VISTALINK_URL"
   requiredParam VISTALINK_ACCESS_CODE "$VISTALINK_ACCESS_CODE"
