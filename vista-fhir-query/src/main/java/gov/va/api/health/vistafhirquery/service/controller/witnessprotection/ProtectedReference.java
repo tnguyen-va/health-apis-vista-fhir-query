@@ -19,11 +19,37 @@ public class ProtectedReference {
 
   private final Consumer<String> onUpdate;
 
+  /**
+   * Create a new instance from an R4 reference if possible. See {@link #forUri(String, Consumer)}.
+   */
   public static Optional<ProtectedReference> forReference(Reference reference) {
-    if (isBlank(reference.reference())) {
+    return forUri(reference.reference(), reference::reference);
+  }
+
+  /**
+   * Create a new instance based on the resource's simple classname, e.g. Observation. The onUpdate
+   * consumer will be invoked to apply the new public ID as part of witness protection.
+   */
+  public static ProtectedReference forResource(Resource resource, Consumer<String> onUpdate) {
+    return ProtectedReference.builder()
+        .type(resource.getClass().getSimpleName())
+        .id(resource.id())
+        .onUpdate(onUpdate)
+        .build();
+  }
+
+  /**
+   * Create a new instance based on a URI where the 2nd to last path element is the type and last
+   * path element is the private ID, e.g. http://anything.com/some/stuff/Observation/12345. The
+   * onUpdate consumer will be invoked to apply the new public ID as part of witness protection.
+   *
+   * <p>If the URI cannot be parsed into resource/id, then an empty reference is returned.
+   */
+  public static Optional<ProtectedReference> forUri(String uri, Consumer<String> onUpdate) {
+    if (isBlank(uri)) {
       return Optional.empty();
     }
-    String[] parts = reference.reference().split("/", -1);
+    String[] parts = uri.split("/", -1);
     if (parts.length < 2) {
       return Optional.empty();
     }
@@ -39,19 +65,13 @@ public class ProtectedReference {
             .onUpdate(
                 s -> {
                   parts[parts.length - 1] = s;
-                  reference.reference(String.join("/", parts));
+                  String newUri = String.join("/", parts);
+                  onUpdate.accept(newUri);
                 })
             .build());
   }
 
-  public static ProtectedReference forResource(Resource resource, Consumer<String> onUpdate) {
-    return ProtectedReference.builder()
-        .type(resource.getClass().getSimpleName())
-        .id(resource.id())
-        .onUpdate(onUpdate)
-        .build();
-  }
-
+  /** Convert this object into a resource identity. This method always returns a non-empty value. */
   public Optional<ResourceIdentity> asResourceIdentity() {
     return Optional.of(
         ResourceIdentity.builder().system("VISTA").resource(type).identifier(id).build());

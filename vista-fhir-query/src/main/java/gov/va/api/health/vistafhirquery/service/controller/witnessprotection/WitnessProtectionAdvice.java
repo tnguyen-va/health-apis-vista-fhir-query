@@ -14,6 +14,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.NonNull;
@@ -28,6 +29,11 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+/**
+ * Controller advice is automatically applied to Bundle and Resource responses. It will lookup the
+ * appropriate witness protection agent based on the resource type and substitute references to
+ * private IDs to public Ids.
+ */
 @Slf4j
 @ControllerAdvice
 public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedReference>
@@ -35,6 +41,7 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
 
   private final Map<Type, WitnessProtectionAgent<?>> agents;
 
+  /** Create a new instance. */
   @Builder
   @Autowired
   public WitnessProtectionAdvice(
@@ -49,11 +56,8 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
   }
 
   private static Type agentType(WitnessProtectionAgent<?> agent) {
-    Class<? extends WitnessProtectionAgent> agentClass = agent.getClass();
-    Type[] genericInterfaces = agentClass.getGenericInterfaces();
-    var x = genericInterfaces[0].getTypeName();
-    Type agentType =
-        Stream.of(genericInterfaces)
+    Type agentInterface =
+        Stream.of(agent.getClass().getGenericInterfaces())
             .filter(
                 type -> type.getTypeName().startsWith(WitnessProtectionAgent.class.getName() + "<"))
             .findFirst()
@@ -61,7 +65,7 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
                 () ->
                     new IllegalArgumentException(
                         agent.getClass() + " is not a " + WitnessProtectionAgent.class.getName()));
-    return ((ParameterizedType) agentType).getActualTypeArguments()[0];
+    return ((ParameterizedType) agentInterface).getActualTypeArguments()[0];
   }
 
   @Override
@@ -76,7 +80,6 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
   }
 
   Object protect(Object body) {
-    log.error("REMOVE THIS LINE: Protecting {}", body);
     if (body instanceof AbstractBundle<?>) {
       protectBundle((AbstractBundle<?>) body);
     } else if (body instanceof Resource) {
@@ -86,10 +89,23 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
   }
 
   private void protectBundle(AbstractBundle<?> bundle) {
-    bundle.entry().stream().map(AbstractEntry::resource).forEach(this::protectResource);
+    bundle.entry().forEach(this::protectEntry);
+  }
+
+  private void protectEntry(AbstractEntry<?> entry) {
+    Optional<ProtectedReference> referenceToFullUrl =
+        ProtectedReference.forUri(entry.fullUrl(), entry::fullUrl);
+    protectResource(
+        entry.resource(),
+        referenceToFullUrl.isEmpty() ? List.of() : List.of(referenceToFullUrl.get()));
   }
 
   private void protectResource(@NonNull Resource resource) {
+    protectResource(resource, List.of());
+  }
+
+  private void protectResource(
+      @NonNull Resource resource, List<ProtectedReference> additionalReferences) {
     /*
      * We need to work around the compiler safeguards a little here. Since we are in control of the
      * map, we populate the key to be type of the agent. From the map is guaranteed to be type
@@ -106,7 +122,7 @@ public class WitnessProtectionAdvice extends IdentitySubstitution<ProtectedRefer
 
     Operations<Resource, ProtectedReference> operations =
         Operations.<Resource, ProtectedReference>builder()
-            .toReferences(agent::referencesOf)
+            .toReferences(r -> Stream.concat(additionalReferences.stream(), agent.referencesOf(r)))
             .isReplaceable(reference -> true)
             .resourceNameOf(ProtectedReference::type)
             .privateIdOf(ProtectedReference::id)

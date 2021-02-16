@@ -31,13 +31,11 @@ class WitnessProtectionAdviceTest {
     var f12 = FugaziOne.builder().id("private-f12").build();
     var f21 = FugaziTwo.builder().id("private-f21").build();
     var f22 = FugaziTwo.builder().id("private-f22").build();
-    FugaziBundle bundle =
-        new FugaziBundle(
-            List.of(
-                new FugaziEntry(f11),
-                new FugaziEntry(f12),
-                new FugaziEntry(f21),
-                new FugaziEntry(f22)));
+    FugaziEntry ef11 = new FugaziEntry(f11);
+    FugaziEntry ef12 = new FugaziEntry(f12);
+    FugaziEntry ef21 = new FugaziEntry(f21);
+    FugaziEntry ef22 = new FugaziEntry(f22);
+    FugaziBundle bundle = new FugaziBundle(List.of(ef11, ef12, ef21, ef22));
 
     when(identityService.register(any()))
         .thenReturn(
@@ -49,9 +47,13 @@ class WitnessProtectionAdviceTest {
 
     wp().protect(bundle);
     assertThat(f11.id()).isEqualTo("public-f11");
+    assertThat(ef11.fullUrl()).isEqualTo("http://fugazi.com/fugazi/FugaziOne/public-f11");
     assertThat(f12.id()).isEqualTo("public-f12");
+    assertThat(ef12.fullUrl()).isEqualTo("http://fugazi.com/fugazi/FugaziOne/public-f12");
     assertThat(f21.id()).isEqualTo("public-f21");
+    assertThat(ef21.fullUrl()).isEqualTo("http://fugazi.com/fugazi/FugaziTwo/public-f21");
     assertThat(f22.id()).isEqualTo("public-f22");
+    assertThat(ef22.fullUrl()).isEqualTo("http://fugazi.com/fugazi/FugaziTwo/public-f22");
   }
 
   private Registration registration(String resource, String baseId) {
@@ -116,6 +118,7 @@ class WitnessProtectionAdviceTest {
   static class FugaziEntry extends AbstractEntry<Resource> {
     FugaziEntry(Resource r) {
       resource(r);
+      fullUrl("http://fugazi.com/fugazi/" + r.getClass().getSimpleName() + "/" + r.id());
     }
   }
 

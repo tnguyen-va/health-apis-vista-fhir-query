@@ -7,17 +7,16 @@ import java.util.stream.Stream;
  * To add witness protection for your resource type, create an implementation of this interface that
  * is available in the Spring context.
  *
- * <pre>{@code
- * @Component
+ * <pre>
+ * &#64;Component
  * public class WhateverWitnessProtectionAgent implements WitnessProtectionAgent&lt;Whatever> {
- *   void updateReference(Whatever whatever) {
+ *   Stream&lt;ProtectedReference> referencesOf(Whatever whatever) {
  *     // do whatever you need here
  *   }
  * }
- * }</pre>
- *
- * @param <ResourceT>
+ * </pre>
  */
 public interface WitnessProtectionAgent<ResourceT extends Resource> {
+  /** Determine non-null, potentially empty references of the given instance. */
   Stream<ProtectedReference> referencesOf(ResourceT resource);
 }
