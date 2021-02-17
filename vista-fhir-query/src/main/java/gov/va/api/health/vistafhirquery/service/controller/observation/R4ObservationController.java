@@ -53,7 +53,7 @@ public class R4ObservationController {
 
   private VistaIdentifierSegment parseOrDie(String publicId) {
     try {
-      return VistaIdentifierSegment.parse(witnessProtection.toPrivateId(publicId));
+      return VistaIdentifierSegment.unpack(witnessProtection.toPrivateId(publicId));
     } catch (IllegalArgumentException e) {
       throw new ResourceExceptions.NotFound(publicId);
     }
