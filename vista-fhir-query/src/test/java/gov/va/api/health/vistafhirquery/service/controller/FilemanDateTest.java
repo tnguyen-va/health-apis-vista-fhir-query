@@ -15,6 +15,12 @@ public class FilemanDateTest {
 
   @Test
   void createFilemanDatefromString() {
+    assertThat(new FilemanDate("2970919").asInstant())
+        .isEqualTo(Instant.parse("1997-09-19T00:00:00Z"));
+    assertThat(new FilemanDate("2970919.08").asInstant())
+        .isEqualTo(Instant.parse("1997-09-19T08:00:00Z"));
+    assertThat(new FilemanDate("2970919.0827").asInstant())
+        .isEqualTo(Instant.parse("1997-09-19T08:27:00Z"));
     assertThat(new FilemanDate("2970919.082701").asInstant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
