@@ -1,22 +1,14 @@
 package gov.va.api.health.vistafhirquery.service.controller;
 
 import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
+import java.io.Serial;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import lombok.Value;
 
 @Value
 public class FilemanDate {
-  private static Pattern datePatternWithTime =
-      Pattern.compile(
-          "(?<year>[0-9]{3})(?<month>[0-9]{2})(?<day>[0-9]{2})"
-              + "(\\.)(?<hour>([0-9]{2}))(?<minute>([0-9]{2}))?(?<second>([0-9]{2}))?$");
-
-  private static Pattern datePatternNoTime =
-      Pattern.compile("(?<year>[0-9]{3})(?<month>[0-9]{2})(?<day>[0-9]{2})$");
 
   Instant instant;
 
@@ -29,60 +21,102 @@ public class FilemanDate {
   }
 
   /** Static constructor for ValueOnlyXmlAttribute. */
-  public static FilemanDate from(ValueOnlyXmlAttribute valueOnlyXmlAttribute) {
+  public static Instant from(ValueOnlyXmlAttribute valueOnlyXmlAttribute) {
     if (valueOnlyXmlAttribute == null) {
-      return new FilemanDate(null);
+      return null;
     }
-    return new FilemanDate(parse(valueOnlyXmlAttribute.value()));
+    return from(new Parser(valueOnlyXmlAttribute.value()).parse()).instant;
   }
 
   /** Static constructor for String input. */
-  public static FilemanDate from(String filemanDate) {
+  public static Instant from(String filemanDate) {
     if (filemanDate == null) {
-      return new FilemanDate(null);
+      return null;
     }
-    return new FilemanDate(parse(filemanDate));
-  }
-
-  private static Instant parse(String filemanDate) {
-    var m = datePatternWithTime.matcher(filemanDate);
-    var m2 = datePatternNoTime.matcher(filemanDate);
-    if (!m.matches() && !m2.matches()) {
-      throw new PatternSyntaxException(
-          "Value provided is not a valid date.", datePatternWithTime.toString(), -1);
-    }
-    String year = "00";
-    String month = "00";
-    String day = "00";
-    String hour = null;
-    String minute = null;
-    String second = null;
-    if (m.matches()) {
-      year = m.group("year");
-      month = m.group("month");
-      day = m.group("day");
-      hour = m.group("hour");
-      minute = m.group("minute");
-      second = m.group("second");
-    }
-    if (m2.matches()) {
-      year = m2.group("year");
-      month = m2.group("month");
-      day = m2.group("day");
-    }
-    return ZonedDateTime.of(
-            Integer.parseInt(year) + 1700,
-            Integer.parseInt(month),
-            Integer.parseInt(day),
-            hour == null ? 0 : Integer.parseInt(hour),
-            minute == null ? 0 : Integer.parseInt(minute),
-            second == null ? 0 : Integer.parseInt(second),
-            0,
-            ZoneId.of("UTC"))
-        .toInstant();
+    return from(new Parser(filemanDate).parse()).instant;
   }
 
   public String toString() {
     return instant.toString();
+  }
+
+  public static class BadFilemanDate extends RuntimeException {
+    @Serial private static final long serialVersionUID = 2556943342836450618L;
+
+    public BadFilemanDate(String message) {
+      super(message);
+    }
+  }
+
+  private static class Parser {
+    final char[] value;
+    int index;
+
+    public Parser(String s) {
+      value = s.toCharArray();
+      index = 0;
+    }
+
+    private int next(int chars) {
+      require(chars);
+      return readInt(chars);
+    }
+
+    private int nextIfAvailable(int chars, int defaultValue) {
+      return (remaining() == 0) ? defaultValue : readInt(chars);
+    }
+
+    public Instant parse() {
+      final int year = next(3);
+      final int month = nextIfAvailable(2, 1);
+      final int day = nextIfAvailable(2, 1);
+      requireCharIfAvailable('.');
+      int hour = nextIfAvailable(2, 0);
+      int minute = nextIfAvailable(2, 0);
+      int second = nextIfAvailable(2, 0);
+      requireNoMoreChars();
+      index = 0;
+      return ZonedDateTime.of(year + 1700, month, day, hour, minute, second, 0, ZoneId.of("UTC"))
+          .toInstant();
+    }
+
+    private int readInt(int chars) {
+      try {
+        return Integer.parseInt(String.valueOf(value, index, chars));
+      } catch (StringIndexOutOfBoundsException | NumberFormatException e) {
+        throw new BadFilemanDate("Cannot parse string into a date, has invalid character(s).");
+      } finally {
+        index += chars;
+      }
+    }
+
+    private int remaining() {
+      return value.length - index;
+    }
+
+    void require(int chars) {
+      if (remaining() < chars) {
+        throw new BadFilemanDate("Invalid date string: not enough characters.");
+      }
+    }
+
+    void requireCharIfAvailable(char c) {
+      if (remaining() == 0) {
+        return;
+      }
+      try {
+        if (value[index] != c) {
+          throw new BadFilemanDate("Invalid date string: missing decimal.");
+        }
+      } finally {
+        index++;
+      }
+    }
+
+    void requireNoMoreChars() {
+      if (remaining() > 0) {
+        throw new BadFilemanDate("Invalid date string: there are extra characters.");
+      }
+    }
   }
 }

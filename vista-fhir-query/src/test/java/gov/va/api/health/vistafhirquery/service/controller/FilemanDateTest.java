@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.*;
 import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.time.DateTimeException;
 import java.time.Instant;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,8 +23,8 @@ public class FilemanDateTest {
 
   @Test
   void checkForNullValues() {
-    assertThat(FilemanDate.from((String) null).instant()).isNull();
-    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null).instant()).isNull();
+    assertThat(FilemanDate.from((String) null)).isNull();
+    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null)).isNull();
   }
 
   @ParameterizedTest
@@ -54,7 +53,7 @@ public class FilemanDateTest {
         "2970919.0828bb"
       })
   void checkInvalidStringCannotBeParsed(String invalidString) {
-    assertThatExceptionOfType(PatternSyntaxException.class)
+    assertThatExceptionOfType(FilemanDate.BadFilemanDate.class)
         .isThrownBy(() -> FilemanDate.from(invalidString));
   }
 
@@ -67,14 +66,12 @@ public class FilemanDateTest {
   @ParameterizedTest
   @MethodSource("stringArguments")
   void createFilemanDatefromString(String fhirDate, String expected) {
-    assertThat(FilemanDate.from(fhirDate).instant()).isEqualTo(Instant.parse(expected));
+    assertThat(FilemanDate.from(fhirDate)).isEqualTo(Instant.parse(expected));
   }
 
   @Test
   void createFilemanDatefromValueOnlyXmlAttribute() {
-    assertThat(
-            FilemanDate.from(ValueOnlyXmlAttribute.builder().value("2970919.082701").build())
-                .instant())
+    assertThat(FilemanDate.from(ValueOnlyXmlAttribute.builder().value("2970919.082701").build()))
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 }
