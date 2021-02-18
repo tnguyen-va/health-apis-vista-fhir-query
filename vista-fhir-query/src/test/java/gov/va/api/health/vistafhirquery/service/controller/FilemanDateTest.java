@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 public class FilemanDateTest {
   @Test
   void checkForNullValues() {
-    assertThat(FilemanDate.from((String) null)).isNull();
-    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null)).isNull();
+    assertThat(FilemanDate.from((String) null).instant()).isNull();
+    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null).instant()).isNull();
   }
 
   @Test

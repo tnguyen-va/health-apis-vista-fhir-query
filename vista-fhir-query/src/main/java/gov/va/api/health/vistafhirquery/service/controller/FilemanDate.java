@@ -4,6 +4,7 @@ import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import lombok.Value;
 
@@ -22,7 +23,7 @@ public class FilemanDate {
   /** Static constructor for ValueOnlyXmlAttribute. */
   public static FilemanDate from(ValueOnlyXmlAttribute valueOnlyXmlAttribute) {
     if (valueOnlyXmlAttribute == null) {
-      return null;
+      return new FilemanDate(null);
     }
     return new FilemanDate(parse(valueOnlyXmlAttribute.value()));
   }
@@ -30,7 +31,7 @@ public class FilemanDate {
   /** Static constructor for String input. */
   public static FilemanDate from(String filemanDate) {
     if (filemanDate == null) {
-      return null;
+      return new FilemanDate(null);
     }
     return new FilemanDate(parse(filemanDate));
   }
