@@ -5,9 +5,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.regex.PatternSyntaxException;
+import lombok.Value;
 
+@Value
 public class FilemanDate {
-  private final Instant instant;
+  Instant instant;
 
   public FilemanDate(Instant i) {
     this.instant = i;
@@ -17,74 +19,61 @@ public class FilemanDate {
     return new FilemanDate(i);
   }
 
+  /** Static constructor for ValueOnlyXmlAttribute. */
   public static FilemanDate from(ValueOnlyXmlAttribute valueOnlyXmlAttribute) {
+    if (valueOnlyXmlAttribute == null) {
+      return null;
+    }
     return new FilemanDate(parse(valueOnlyXmlAttribute.value()));
   }
 
+  /** Static constructor for String input. */
   public static FilemanDate from(String filemanDate) {
+    if (filemanDate == null) {
+      return null;
+    }
     return new FilemanDate(parse(filemanDate));
   }
 
+  private static Integer getIntegerSubstring(String checkforInt, int index1, int index2) {
+    String maybeInt = checkforInt.substring(index1, index2);
+    if (!maybeInt.matches("[0-9]+")) {
+      throw new PatternSyntaxException(
+          "Index " + index1 + "-" + index2 + "of" + maybeInt + "is not a number", "[0-9]+", -1);
+    }
+    return Integer.parseInt(maybeInt);
+  }
+
   private static Instant parse(String filemanDate) {
-    String numberpattern = "[0-9]+";
+    int year;
+    int month;
+    int day;
     int hour = 0;
     int minute = 0;
     int second = 0;
     if (filemanDate.contains(".")) {
       String[] splitDate = filemanDate.split("\\.", -1);
+      String head = splitDate[0];
+      year = getIntegerSubstring(head, 0, 3) + 1700;
+      month = getIntegerSubstring(head, 3, 5);
+      day = getIntegerSubstring(head, 5, 7);
       String tail = splitDate[1];
       if (tail.length() >= 2) {
-        String maybeHour = tail.substring(0, 2);
-        if (!maybeHour.matches(numberpattern)) {
-          throw new PatternSyntaxException("Hour value cannot be parsed.", numberpattern, -1);
-        }
-        hour = Integer.parseInt(maybeHour);
+        hour = getIntegerSubstring(tail, 0, 2);
       }
       if (tail.length() >= 4) {
-        String maybeMinute = tail.substring(2, 4);
-        if (!maybeMinute.matches(numberpattern)) {
-          throw new PatternSyntaxException("Minute value cannot be parsed.", numberpattern, -1);
-        }
-        minute = Integer.parseInt(maybeMinute);
+        minute = getIntegerSubstring(tail, 2, 4);
       }
       if (tail.length() == 6) {
-        String maybeSecond = tail.substring(4, 6);
-        if (!maybeSecond.matches(numberpattern)) {
-          throw new PatternSyntaxException("Second value cannot be parsed.", numberpattern, -1);
-        }
-        second = Integer.parseInt(maybeSecond);
+        second = getIntegerSubstring(tail, 4, 6);
       }
-    }
-    int year = 0;
-    int month = 0;
-    int day = 0;
-    if (filemanDate.length() >= 3) {
-      String maybeYear = filemanDate.substring(0, 3);
-      if (!maybeYear.matches(numberpattern)) {
-        throw new PatternSyntaxException("Year value cannot be parsed.", numberpattern, -1);
-      }
-      year = Integer.parseInt(maybeYear) + 1700;
-    }
-    if (filemanDate.length() >= 5) {
-      String maybeMonth = filemanDate.substring(3, 5);
-      if (!maybeMonth.matches(numberpattern)) {
-        throw new PatternSyntaxException("Month value cannot be parsed.", numberpattern, -1);
-      }
-      month = Integer.parseInt(maybeMonth);
-    }
-    if (filemanDate.length() >= 7) {
-      String maybeDay = filemanDate.substring(5, 7);
-      if (!maybeDay.matches(numberpattern)) {
-        throw new PatternSyntaxException("Day value cannot be parsed.", numberpattern, -1);
-      }
-      day = Integer.parseInt(maybeDay);
+    } else {
+      year = getIntegerSubstring(filemanDate, 0, 3) + 1700;
+      month = getIntegerSubstring(filemanDate, 3, 5);
+      day = getIntegerSubstring(filemanDate, 5, 7);
     }
     return ZonedDateTime.of(year, month, day, hour, minute, second, 0, ZoneId.of("UTC"))
         .toInstant();
-  }
-
-  Instant asInstant() {
-    return instant;
   }
 
   public String toString() {

@@ -10,6 +10,12 @@ import org.junit.jupiter.api.Test;
 
 public class FilemanDateTest {
   @Test
+  void checkForNullValues() {
+    assertThat(FilemanDate.from((String) null)).isNull();
+    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null)).isNull();
+  }
+
+  @Test
   void checkInvalidDates() {
     assertThatExceptionOfType(DateTimeException.class)
         .isThrownBy(() -> FilemanDate.from("2975019.082801"));
@@ -41,19 +47,19 @@ public class FilemanDateTest {
 
   @Test
   void createFilemanDatefromInstant() {
-    assertThat(FilemanDate.from(Instant.parse("1997-09-19T08:27:01Z")).asInstant())
+    assertThat(FilemanDate.from(Instant.parse("1997-09-19T08:27:01Z")).instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 
   @Test
   void createFilemanDatefromString() {
-    assertThat(FilemanDate.from("2970919").asInstant())
+    assertThat(FilemanDate.from("2970919").instant())
         .isEqualTo(Instant.parse("1997-09-19T00:00:00Z"));
-    assertThat(FilemanDate.from("2970919.08").asInstant())
+    assertThat(FilemanDate.from("2970919.08").instant())
         .isEqualTo(Instant.parse("1997-09-19T08:00:00Z"));
-    assertThat(FilemanDate.from("2970919.0827").asInstant())
+    assertThat(FilemanDate.from("2970919.0827").instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:00Z"));
-    assertThat(FilemanDate.from("2970919.082701").asInstant())
+    assertThat(FilemanDate.from("2970919.082701").instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 
@@ -61,7 +67,7 @@ public class FilemanDateTest {
   void createFilemanDatefromValueOnlyXmlAttribute() {
     assertThat(
             FilemanDate.from(ValueOnlyXmlAttribute.builder().value("2970919.082701").build())
-                .asInstant())
+                .instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 }
