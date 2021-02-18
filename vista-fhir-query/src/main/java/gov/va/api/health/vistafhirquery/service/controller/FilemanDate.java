@@ -10,10 +10,13 @@ import lombok.Value;
 
 @Value
 public class FilemanDate {
-  private static Pattern datePattern =
+  private static Pattern datePatternWithTime =
       Pattern.compile(
           "(?<year>[0-9]{3})(?<month>[0-9]{2})(?<day>[0-9]{2})"
-              + "((\\.)(?<hour>([0-9]{2}))(?<minute>([0-9]{2}))?(?<second>([0-9]{2}))?)?$");
+              + "(\\.)(?<hour>([0-9]{2}))(?<minute>([0-9]{2}))?(?<second>([0-9]{2}))?$");
+
+  private static Pattern datePatternNoTime =
+      Pattern.compile("(?<year>[0-9]{3})(?<month>[0-9]{2})(?<day>[0-9]{2})$");
 
   Instant instant;
 
@@ -42,17 +45,31 @@ public class FilemanDate {
   }
 
   private static Instant parse(String filemanDate) {
-    var m = datePattern.matcher(filemanDate);
-    if (!m.matches()) {
+    var m = datePatternWithTime.matcher(filemanDate);
+    var m2 = datePatternNoTime.matcher(filemanDate);
+    if (!m.matches() && !m2.matches()) {
       throw new PatternSyntaxException(
-          "Value provided is not a valid date.", datePattern.toString(), -1);
+          "Value provided is not a valid date.", datePatternWithTime.toString(), -1);
     }
-    String year = m.group("year");
-    String month = m.group("month");
-    String day = m.group("day");
-    String hour = m.group("hour");
-    String minute = m.group("minute");
-    String second = m.group("second");
+    String year = "00";
+    String month = "00";
+    String day = "00";
+    String hour = null;
+    String minute = null;
+    String second = null;
+    if (m.matches()) {
+      year = m.group("year");
+      month = m.group("month");
+      day = m.group("day");
+      hour = m.group("hour");
+      minute = m.group("minute");
+      second = m.group("second");
+    }
+    if (m2.matches()) {
+      year = m2.group("year");
+      month = m2.group("month");
+      day = m2.group("day");
+    }
     return ZonedDateTime.of(
             Integer.parseInt(year) + 1700,
             Integer.parseInt(month),

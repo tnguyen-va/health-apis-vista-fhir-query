@@ -6,11 +6,22 @@ import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class FilemanDateTest {
+  private static Stream<Arguments> stringArguments() {
+    return Stream.of(
+        Arguments.arguments("2970919", "1997-09-19T00:00:00Z"),
+        Arguments.arguments("2970919.08", "1997-09-19T08:00:00Z"),
+        Arguments.arguments("2970919.0827", "1997-09-19T08:27:00Z"),
+        Arguments.arguments("2970919.082701", "1997-09-19T08:27:01Z"));
+  }
+
   @Test
   void checkForNullValues() {
     assertThat(FilemanDate.from((String) null).instant()).isNull();
@@ -53,16 +64,10 @@ public class FilemanDateTest {
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 
-  @Test
-  void createFilemanDatefromString() {
-    assertThat(FilemanDate.from("2970919").instant())
-        .isEqualTo(Instant.parse("1997-09-19T00:00:00Z"));
-    assertThat(FilemanDate.from("2970919.08").instant())
-        .isEqualTo(Instant.parse("1997-09-19T08:00:00Z"));
-    assertThat(FilemanDate.from("2970919.0827").instant())
-        .isEqualTo(Instant.parse("1997-09-19T08:27:00Z"));
-    assertThat(FilemanDate.from("2970919.082701").instant())
-        .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
+  @ParameterizedTest
+  @MethodSource("stringArguments")
+  void createFilemanDatefromString(String fhirDate, String expected) {
+    assertThat(FilemanDate.from(fhirDate).instant()).isEqualTo(Instant.parse(expected));
   }
 
   @Test
