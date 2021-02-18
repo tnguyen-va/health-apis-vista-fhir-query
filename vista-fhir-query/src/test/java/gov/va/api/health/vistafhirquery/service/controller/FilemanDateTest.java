@@ -7,6 +7,8 @@ import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.regex.PatternSyntaxException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class FilemanDateTest {
   @Test
@@ -15,34 +17,34 @@ public class FilemanDateTest {
     assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null).instant()).isNull();
   }
 
-  @Test
-  void checkInvalidDates() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "2975019.082801",
+        "2970940.082801",
+        "2970919.302801",
+        "2970919.087001",
+        "2970919.087001",
+        "2970919.082890"
+      })
+  void checkInvalidDates(String invalidDate) {
     assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from("2975019.082801"));
-    assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from("2970940.082801"));
-    assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.302801"));
-    assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.087001"));
-    assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.082890"));
+        .isThrownBy(() -> FilemanDate.from(invalidDate));
   }
 
-  @Test
-  void checkInvalidStringCannotBeParsed() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "aa70919.082801",
+        "297bb19.082801",
+        "29709cc.082801",
+        "2970919.aa2801",
+        "2970919.08cc01",
+        "2970919.0828bb"
+      })
+  void checkInvalidStringCannotBeParsed(String invalidString) {
     assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("aa70919.082801"));
-    assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("297bb19.082801"));
-    assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("29709cc.082801"));
-    assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.aa2801"));
-    assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.08cc01"));
-    assertThatExceptionOfType(PatternSyntaxException.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.0828bb"));
+        .isThrownBy(() -> FilemanDate.from(invalidString));
   }
 
   @Test

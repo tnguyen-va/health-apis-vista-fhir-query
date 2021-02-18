@@ -10,6 +10,11 @@ import lombok.Value;
 
 @Value
 public class FilemanDate {
+  private static Pattern datePattern =
+      Pattern.compile(
+          "(?<year>[0-9]{3})(?<month>[0-9]{2})(?<day>[0-9]{2})"
+              + "((\\.)(?<hour>([0-9]{2}))(?<minute>([0-9]{2}))?(?<second>([0-9]{2}))?)?$");
+
   Instant instant;
 
   public FilemanDate(Instant i) {
@@ -36,44 +41,27 @@ public class FilemanDate {
     return new FilemanDate(parse(filemanDate));
   }
 
-  private static Integer getIntegerSubstring(String checkforInt, int index1, int index2) {
-    String maybeInt = checkforInt.substring(index1, index2);
-    if (!maybeInt.matches("[0-9]+")) {
-      throw new PatternSyntaxException(
-          "Index " + index1 + "-" + index2 + "of" + maybeInt + "is not a number", "[0-9]+", -1);
-    }
-    return Integer.parseInt(maybeInt);
-  }
-
   private static Instant parse(String filemanDate) {
-    int year;
-    int month;
-    int day;
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-    if (filemanDate.contains(".")) {
-      String[] splitDate = filemanDate.split("\\.", -1);
-      String head = splitDate[0];
-      year = getIntegerSubstring(head, 0, 3) + 1700;
-      month = getIntegerSubstring(head, 3, 5);
-      day = getIntegerSubstring(head, 5, 7);
-      String tail = splitDate[1];
-      if (tail.length() >= 2) {
-        hour = getIntegerSubstring(tail, 0, 2);
-      }
-      if (tail.length() >= 4) {
-        minute = getIntegerSubstring(tail, 2, 4);
-      }
-      if (tail.length() == 6) {
-        second = getIntegerSubstring(tail, 4, 6);
-      }
-    } else {
-      year = getIntegerSubstring(filemanDate, 0, 3) + 1700;
-      month = getIntegerSubstring(filemanDate, 3, 5);
-      day = getIntegerSubstring(filemanDate, 5, 7);
+    var m = datePattern.matcher(filemanDate);
+    if (!m.matches()) {
+      throw new PatternSyntaxException(
+          "Value provided is not a valid date.", datePattern.toString(), -1);
     }
-    return ZonedDateTime.of(year, month, day, hour, minute, second, 0, ZoneId.of("UTC"))
+    String year = m.group("year");
+    String month = m.group("month");
+    String day = m.group("day");
+    String hour = m.group("hour");
+    String minute = m.group("minute");
+    String second = m.group("second");
+    return ZonedDateTime.of(
+            Integer.parseInt(year) + 1700,
+            Integer.parseInt(month),
+            Integer.parseInt(day),
+            hour == null ? 0 : Integer.parseInt(hour),
+            minute == null ? 0 : Integer.parseInt(minute),
+            second == null ? 0 : Integer.parseInt(second),
+            0,
+            ZoneId.of("UTC"))
         .toInstant();
   }
 
