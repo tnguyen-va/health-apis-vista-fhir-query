@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,16 +16,32 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class FilemanDateTest {
   private static Stream<Arguments> stringArguments() {
     return Stream.of(
-        Arguments.arguments("2970919", "1997-09-19T00:00:00Z"),
-        Arguments.arguments("2970919.08", "1997-09-19T08:00:00Z"),
-        Arguments.arguments("2970919.0827", "1997-09-19T08:27:00Z"),
-        Arguments.arguments("2970919.082701", "1997-09-19T08:27:01Z"));
+        Arguments.arguments("2970919", ZoneId.of("UTC"), "1997-09-19T00:00:00Z"),
+        Arguments.arguments("2970919.", ZoneId.of("UTC"), "1997-09-19T00:00:00Z"),
+        Arguments.arguments("2970919.08", ZoneId.of("UTC"), "1997-09-19T08:00:00Z"),
+        Arguments.arguments("2970919.0827", ZoneId.of("UTC"), "1997-09-19T08:27:00Z"),
+        Arguments.arguments("2970919.082701", ZoneId.of("UTC"), "1997-09-19T08:27:01Z"),
+        Arguments.arguments("2970919.082701", ZoneId.of("UTC"), "1997-09-19T08:27:01Z"),
+        Arguments.arguments(
+            "2970919.082701", ZoneId.of("America/New_York"), "1997-09-19T12:27:01Z"),
+        Arguments.arguments("2970919.082701", ZoneId.of("America/Chicago"), "1997-09-19T13:27:01Z"),
+        Arguments.arguments("2970919.082701", ZoneId.of("America/Denver"), "1997-09-19T14:27:01Z"),
+        Arguments.arguments(
+            "2970919.082701", ZoneId.of("America/Los_Angeles"), "1997-09-19T15:27:01Z"),
+        Arguments.arguments(
+            "2970919.082701", ZoneId.of("America/Anchorage"), "1997-09-19T16:27:01Z"));
+  }
+
+  @Test
+  void checkForNullTimeZones() {
+    assertThatExceptionOfType(FilemanDate.BadFilemanDate.class)
+        .isThrownBy(() -> FilemanDate.from("2970919.082701", null));
   }
 
   @Test
   void checkForNullValues() {
-    assertThat(FilemanDate.from((String) null)).isNull();
-    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null)).isNull();
+    assertThat(FilemanDate.from((String) null, ZoneId.of("America/New_York"))).isNull();
+    assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null, null)).isNull();
   }
 
   @ParameterizedTest
@@ -39,12 +56,13 @@ public class FilemanDateTest {
       })
   void checkInvalidDates(String invalidDate) {
     assertThatExceptionOfType(DateTimeException.class)
-        .isThrownBy(() -> FilemanDate.from(invalidDate));
+        .isThrownBy(() -> FilemanDate.from(invalidDate, ZoneId.of("UTC")));
   }
 
   @ParameterizedTest
   @ValueSource(
       strings = {
+        "27909191.082801",
         "aa70919.082801",
         "297bb19.082801",
         "29709cc.082801",
@@ -54,7 +72,7 @@ public class FilemanDateTest {
       })
   void checkInvalidStringCannotBeParsed(String invalidString) {
     assertThatExceptionOfType(FilemanDate.BadFilemanDate.class)
-        .isThrownBy(() -> FilemanDate.from(invalidString));
+        .isThrownBy(() -> FilemanDate.from(invalidString, ZoneId.of("UTC")));
   }
 
   @Test
@@ -65,13 +83,15 @@ public class FilemanDateTest {
 
   @ParameterizedTest
   @MethodSource("stringArguments")
-  void createFilemanDatefromString(String fhirDate, String expected) {
-    assertThat(FilemanDate.from(fhirDate)).isEqualTo(Instant.parse(expected));
+  void createFilemanDatefromString(String fhirDate, ZoneId timeZone, String expected) {
+    assertThat(FilemanDate.from(fhirDate, timeZone)).isEqualTo(Instant.parse(expected));
   }
 
   @Test
   void createFilemanDatefromValueOnlyXmlAttribute() {
-    assertThat(FilemanDate.from(ValueOnlyXmlAttribute.builder().value("2970919.082701").build()))
+    assertThat(
+            FilemanDate.from(
+                ValueOnlyXmlAttribute.builder().value("2970919.082701").build(), ZoneId.of("UTC")))
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 }

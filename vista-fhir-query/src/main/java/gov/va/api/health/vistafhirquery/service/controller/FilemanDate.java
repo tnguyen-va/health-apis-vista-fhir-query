@@ -9,7 +9,6 @@ import lombok.Value;
 
 @Value
 public class FilemanDate {
-
   Instant instant;
 
   public FilemanDate(Instant i) {
@@ -21,19 +20,19 @@ public class FilemanDate {
   }
 
   /** Static constructor for ValueOnlyXmlAttribute. */
-  public static Instant from(ValueOnlyXmlAttribute valueOnlyXmlAttribute) {
+  public static Instant from(ValueOnlyXmlAttribute valueOnlyXmlAttribute, ZoneId timeZone) {
     if (valueOnlyXmlAttribute == null) {
       return null;
     }
-    return from(new Parser(valueOnlyXmlAttribute.value()).parse()).instant;
+    return from(valueOnlyXmlAttribute.value(), timeZone);
   }
 
   /** Static constructor for String input. */
-  public static Instant from(String filemanDate) {
+  public static Instant from(String filemanDate, ZoneId timeZone) {
     if (filemanDate == null) {
       return null;
     }
-    return from(new Parser(filemanDate).parse()).instant;
+    return from(new Parser(filemanDate, timeZone).parse()).instant();
   }
 
   public String toString() {
@@ -46,14 +45,22 @@ public class FilemanDate {
     public BadFilemanDate(String message) {
       super(message);
     }
+
+    public BadFilemanDate(String reason, char[] value) {
+      super("Invalid date string: " + String.valueOf(value) + ". " + reason);
+    }
   }
 
   private static class Parser {
     final char[] value;
+
+    ZoneId timeZone;
+
     int index;
 
-    public Parser(String s) {
+    public Parser(String s, ZoneId tz) {
       value = s.toCharArray();
+      timeZone = tz;
       index = 0;
     }
 
@@ -67,16 +74,17 @@ public class FilemanDate {
     }
 
     public Instant parse() {
+      requireTimeZone();
       final int year = next(3);
-      final int month = nextIfAvailable(2, 1);
-      final int day = nextIfAvailable(2, 1);
+      final int month = next(2);
+      final int day = next(2);
       requireCharIfAvailable('.');
       int hour = nextIfAvailable(2, 0);
       int minute = nextIfAvailable(2, 0);
       int second = nextIfAvailable(2, 0);
       requireNoMoreChars();
       index = 0;
-      return ZonedDateTime.of(year + 1700, month, day, hour, minute, second, 0, ZoneId.of("UTC"))
+      return ZonedDateTime.of(year + 1700, month, day, hour, minute, second, 0, timeZone)
           .toInstant();
     }
 
@@ -84,7 +92,7 @@ public class FilemanDate {
       try {
         return Integer.parseInt(String.valueOf(value, index, chars));
       } catch (StringIndexOutOfBoundsException | NumberFormatException e) {
-        throw new BadFilemanDate("Cannot parse string into a date, has invalid character(s).");
+        throw new BadFilemanDate("Contains invalid characters.", value);
       } finally {
         index += chars;
       }
@@ -96,7 +104,7 @@ public class FilemanDate {
 
     void require(int chars) {
       if (remaining() < chars) {
-        throw new BadFilemanDate("Invalid date string: not enough characters.");
+        throw new BadFilemanDate("Not enough characters.", value);
       }
     }
 
@@ -106,7 +114,7 @@ public class FilemanDate {
       }
       try {
         if (value[index] != c) {
-          throw new BadFilemanDate("Invalid date string: missing decimal.");
+          throw new BadFilemanDate("Missing decimal.", value);
         }
       } finally {
         index++;
@@ -115,7 +123,13 @@ public class FilemanDate {
 
     void requireNoMoreChars() {
       if (remaining() > 0) {
-        throw new BadFilemanDate("Invalid date string: there are extra characters.");
+        throw new BadFilemanDate("There are extra characters.", value);
+      }
+    }
+
+    void requireTimeZone() {
+      if (timeZone == null) {
+        throw new BadFilemanDate("No time zone specified.");
       }
     }
   }
