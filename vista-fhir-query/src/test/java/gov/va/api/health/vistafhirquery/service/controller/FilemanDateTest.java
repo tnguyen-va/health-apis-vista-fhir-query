@@ -1,6 +1,7 @@
 package gov.va.api.health.vistafhirquery.service.controller;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.time.DateTimeException;
@@ -94,8 +95,9 @@ public class FilemanDateTest {
 
   @Test
   void parseTrailingDecimalAndReturnCanonicalNumber() {
-    assertThat(FilemanDate.from("2970919.", ZoneId.of("UTC")).fileManDate(ZoneId.of("UTC")))
-        .isEqualTo(FilemanDate.from("2970919", ZoneId.of("UTC")).fileManDate(ZoneId.of("UTC")));
+    assertThat(FilemanDate.from("2970919.", ZoneId.of("UTC")).formatAsDateTime(ZoneId.of("UTC")))
+        .isEqualTo(
+            FilemanDate.from("2970919", ZoneId.of("UTC")).formatAsDateTime(ZoneId.of("UTC")));
     assertThat(FilemanDate.from("2970919.", ZoneId.of("UTC")).instant())
         .isEqualTo(FilemanDate.from("2970919", ZoneId.of("UTC")).instant());
   }
@@ -103,7 +105,7 @@ public class FilemanDateTest {
   @ParameterizedTest
   @MethodSource("stringArguments")
   void roundTrip(String fileManDateString, ZoneId timeZone) {
-    assertThat(FilemanDate.from(fileManDateString, timeZone).fileManDate(timeZone))
+    assertThat(FilemanDate.from(fileManDateString, timeZone).formatAsDateTime(timeZone))
         .isEqualTo(fileManDateString);
   }
 }

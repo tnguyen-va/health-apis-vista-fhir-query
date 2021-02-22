@@ -36,18 +36,20 @@ public class FilemanDate {
     return from(new Parser(filemanDate, timeZone).parse());
   }
 
-  /** Returns FileManDate formatted string for a given time zone. */
-  public String fileManDate(ZoneId timeZone) {
-    DecimalFormat formatter = new DecimalFormat("00");
-    ZonedDateTime zdt = instant().atZone(timeZone);
-    String year = String.valueOf(zdt.getYear() - 1700);
-    String month = formatter.format(zdt.getMonthValue());
-    String day = formatter.format(zdt.getDayOfMonth());
-    String hour = formatter.format(zdt.getHour());
-    String minute = formatter.format(zdt.getMinute());
-    String second = formatter.format(zdt.getSecond());
-    String fmd = year + month + day + "." + hour + minute + second;
-    return fmd.contains(".") ? fmd.replaceAll("0*$", "").replaceAll("\\.$", "") : fmd;
+  private static DecimalFormat zeroPaddedDecimal() {
+    return new DecimalFormat("00");
+  }
+
+  /**
+   * Returns FileManDate formatted string for a given time zone. Time information will be omitted if
+   * it is midnight.Trailing zeros will be omitted after the decimal in time values. Values less
+   * than 10 will be padded with a leading zero. Examples: 2970919.082701,
+   * 2970919.08271,2970919.082, 2970919.08, 2970919
+   *
+   * <p>See http://www.vistapedia.net/index.php/Date_formats
+   */
+  public String formatAsDateTime(ZoneId timeZone) {
+    return new DateTimeFormatter().format(instant().atZone(timeZone));
   }
 
   public static class BadFilemanDate extends RuntimeException {
@@ -59,6 +61,56 @@ public class FilemanDate {
 
     public BadFilemanDate(String reason, char[] value) {
       super("Invalid date string: " + String.valueOf(value) + ". " + reason);
+    }
+  }
+
+  private static class DateTimeFormatter {
+    private final DecimalFormat numbers = zeroPaddedDecimal();
+
+    public String format(ZonedDateTime zdt) {
+      StringBuilder result = new StringBuilder(14);
+      result
+          .append(zdt.getYear() - 1700)
+          .append(zeroPaddedNumber(zdt.getMonthValue()))
+          .append(zeroPaddedNumber(zdt.getDayOfMonth()));
+      if (!hasValue(zdt.getHour(), zdt.getMinute(), zdt.getSecond())) {
+        return result.toString();
+      }
+
+      result.append('.');
+      if (hasValue(zdt.getMinute(), zdt.getSecond())) {
+        result.append(zeroPaddedNumber(zdt.getHour()));
+      } else {
+        return result.append(noTrailingZero(zdt.getHour())).toString();
+      }
+
+      if (hasValue(zdt.getSecond())) {
+        result.append(zeroPaddedNumber(zdt.getMinute()));
+      } else {
+        return result.append(noTrailingZero(zdt.getMinute())).toString();
+      }
+
+      return result.append(noTrailingZero(zdt.getSecond())).toString();
+    }
+
+    private boolean hasValue(int... values) {
+      for (var v : values) {
+        if (v != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private String noTrailingZero(int number) {
+      if (number % 10 == 0) {
+        return Integer.toString(number / 10);
+      }
+      return zeroPaddedNumber(number);
+    }
+
+    private String zeroPaddedNumber(int value) {
+      return numbers.format(value);
     }
   }
 
