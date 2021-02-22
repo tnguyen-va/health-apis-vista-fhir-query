@@ -17,7 +17,6 @@ public class FilemanDateTest {
   private static Stream<Arguments> stringArguments() {
     return Stream.of(
         Arguments.arguments("2970919", ZoneId.of("UTC"), "1997-09-19T00:00:00Z"),
-        Arguments.arguments("2970919.", ZoneId.of("UTC"), "1997-09-19T00:00:00Z"),
         Arguments.arguments("2970919.08", ZoneId.of("UTC"), "1997-09-19T08:00:00Z"),
         Arguments.arguments("2970919.0827", ZoneId.of("UTC"), "1997-09-19T08:27:00Z"),
         Arguments.arguments("2970919.082701", ZoneId.of("UTC"), "1997-09-19T08:27:01Z"),
@@ -33,15 +32,11 @@ public class FilemanDateTest {
   }
 
   @Test
-  void checkForNullTimeZones() {
-    assertThatExceptionOfType(FilemanDate.BadFilemanDate.class)
-        .isThrownBy(() -> FilemanDate.from("2970919.082701", null));
-  }
-
-  @Test
   void checkForNullValues() {
     assertThat(FilemanDate.from((String) null, ZoneId.of("America/New_York"))).isNull();
     assertThat(FilemanDate.from((ValueOnlyXmlAttribute) null, null)).isNull();
+    assertThatExceptionOfType(FilemanDate.BadFilemanDate.class)
+        .isThrownBy(() -> FilemanDate.from("2970919.082701", null));
   }
 
   @ParameterizedTest
@@ -76,22 +71,39 @@ public class FilemanDateTest {
   }
 
   @Test
-  void createFilemanDatefromInstant() {
+  void createFilemanDateFromInstant() {
     assertThat(FilemanDate.from(Instant.parse("1997-09-19T08:27:01Z")).instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
   }
 
   @ParameterizedTest
   @MethodSource("stringArguments")
-  void createFilemanDatefromString(String fhirDate, ZoneId timeZone, String expected) {
-    assertThat(FilemanDate.from(fhirDate, timeZone)).isEqualTo(Instant.parse(expected));
+  void createFilemanDateFromString(String fhirDate, ZoneId timeZone, String expected) {
+    assertThat(FilemanDate.from(fhirDate, timeZone).instant()).isEqualTo(Instant.parse(expected));
   }
 
   @Test
-  void createFilemanDatefromValueOnlyXmlAttribute() {
+  void createFilemanDateFromValueOnlyXmlAttribute() {
     assertThat(
             FilemanDate.from(
-                ValueOnlyXmlAttribute.builder().value("2970919.082701").build(), ZoneId.of("UTC")))
+                    ValueOnlyXmlAttribute.builder().value("2970919.082701").build(),
+                    ZoneId.of("UTC"))
+                .instant())
         .isEqualTo(Instant.parse("1997-09-19T08:27:01Z"));
+  }
+
+  @Test
+  void parseTrailingDecimalAndReturnCanonicalNumber() {
+    assertThat(FilemanDate.from("2970919.", ZoneId.of("UTC")).fileManDate(ZoneId.of("UTC")))
+        .isEqualTo(FilemanDate.from("2970919", ZoneId.of("UTC")).fileManDate(ZoneId.of("UTC")));
+    assertThat(FilemanDate.from("2970919.", ZoneId.of("UTC")).instant())
+        .isEqualTo(FilemanDate.from("2970919", ZoneId.of("UTC")).instant());
+  }
+
+  @ParameterizedTest
+  @MethodSource("stringArguments")
+  void roundTrip(String fileManDateString, ZoneId timeZone) {
+    assertThat(FilemanDate.from(fileManDateString, timeZone).fileManDate(timeZone))
+        .isEqualTo(fileManDateString);
   }
 }

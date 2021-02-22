@@ -2,6 +2,7 @@ package gov.va.api.health.vistafhirquery.service.controller;
 
 import gov.va.api.lighthouse.vistalink.models.ValueOnlyXmlAttribute;
 import java.io.Serial;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -20,7 +21,7 @@ public class FilemanDate {
   }
 
   /** Static constructor for ValueOnlyXmlAttribute. */
-  public static Instant from(ValueOnlyXmlAttribute valueOnlyXmlAttribute, ZoneId timeZone) {
+  public static FilemanDate from(ValueOnlyXmlAttribute valueOnlyXmlAttribute, ZoneId timeZone) {
     if (valueOnlyXmlAttribute == null) {
       return null;
     }
@@ -28,15 +29,25 @@ public class FilemanDate {
   }
 
   /** Static constructor for String input. */
-  public static Instant from(String filemanDate, ZoneId timeZone) {
+  public static FilemanDate from(String filemanDate, ZoneId timeZone) {
     if (filemanDate == null) {
       return null;
     }
-    return from(new Parser(filemanDate, timeZone).parse()).instant();
+    return from(new Parser(filemanDate, timeZone).parse());
   }
 
-  public String toString() {
-    return instant.toString();
+  /** Returns FileManDate formatted string for a given time zone. */
+  public String fileManDate(ZoneId timeZone) {
+    DecimalFormat formatter = new DecimalFormat("00");
+    ZonedDateTime zdt = instant().atZone(timeZone);
+    String year = String.valueOf(zdt.getYear() - 1700);
+    String month = formatter.format(zdt.getMonthValue());
+    String day = formatter.format(zdt.getDayOfMonth());
+    String hour = formatter.format(zdt.getHour());
+    String minute = formatter.format(zdt.getMinute());
+    String second = formatter.format(zdt.getSecond());
+    String fmd = year + month + day + "." + hour + minute + second;
+    return fmd.contains(".") ? fmd.replaceAll("0*$", "").replaceAll("\\.$", "") : fmd;
   }
 
   public static class BadFilemanDate extends RuntimeException {
