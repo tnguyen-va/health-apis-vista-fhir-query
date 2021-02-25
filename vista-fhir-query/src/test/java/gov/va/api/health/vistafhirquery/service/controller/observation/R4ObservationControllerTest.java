@@ -10,14 +10,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import gov.va.api.health.vistafhirquery.service.config.LinkProperties;
+import gov.va.api.health.vistafhirquery.service.controller.R4BundlerFactory;
 import gov.va.api.health.vistafhirquery.service.controller.ResourceExceptions;
 import gov.va.api.health.vistafhirquery.service.controller.VistalinkApiClient;
+import gov.va.api.health.vistafhirquery.service.controller.witnessprotection.AlternatePatientIds.DisabledAlternatePatientIds;
 import gov.va.api.health.vistafhirquery.service.controller.witnessprotection.WitnessProtection;
 import gov.va.api.lighthouse.vistalink.api.RpcDetails;
 import gov.va.api.lighthouse.vistalink.api.RpcInvocationResult;
 import gov.va.api.lighthouse.vistalink.api.RpcResponse;
 import gov.va.api.lighthouse.vistalink.models.vprgetpatientdata.VprGetPatientData;
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ public class R4ObservationControllerTest {
   private static VitalVuidMapper mapper;
   @Mock VistalinkApiClient vlClient;
   @Mock WitnessProtection wp;
+  @Mock HttpServletRequest request;
 
   @BeforeAll
   static void _init() {
@@ -40,17 +44,22 @@ public class R4ObservationControllerTest {
   }
 
   private R4ObservationController controller() {
+    var bundlerFactory =
+        R4BundlerFactory.builder()
+            .linkProperties(
+                LinkProperties.builder()
+                    .defaultPageSize(15)
+                    .maxPageSize(100)
+                    .publicUrl("http://fugazi.com")
+                    .publicR4BasePath("r4")
+                    .build())
+            .alternatePatientIds(new DisabledAlternatePatientIds())
+            .build();
     return R4ObservationController.builder()
         .vistalinkApiClient(vlClient)
-        .witnessProtection(wp)
-        .linkProperties(
-            LinkProperties.builder()
-                .defaultPageSize(15)
-                .maxPageSize(100)
-                .publicUrl("http://fugazi.com")
-                .publicR4BasePath("r4")
-                .build())
         .vitalVuids(mapper)
+        .witnessProtection(wp)
+        .bundlerFactory(bundlerFactory)
         .build();
   }
 
@@ -111,7 +120,8 @@ public class R4ObservationControllerTest {
                     List.of(
                         RpcInvocationResult.builder().vista("123").response(responseBody).build()))
                 .build());
-    var actual = controller().searchByPatient("p1", 10);
+    when(request.getParameter("patient")).thenReturn("p1");
+    var actual = controller().searchByPatient("p1", 10, request);
     assertThat(actual.entry()).isEmpty();
   }
 
@@ -129,7 +139,8 @@ public class R4ObservationControllerTest {
                     List.of(
                         RpcInvocationResult.builder().vista("123").response(responseBody).build()))
                 .build());
-    var actual = controller().searchByPatient("p1", 10);
+    when(request.getParameter("patient")).thenReturn("p1");
+    var actual = controller().searchByPatient("p1", 10, request);
     assertThat(actual.entry()).isNotEmpty();
   }
 }

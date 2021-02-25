@@ -1,8 +1,8 @@
 package gov.va.api.health.vistafhirquery.service.controller.observation;
 
 import gov.va.api.health.r4.api.resources.Observation;
-import gov.va.api.health.vistafhirquery.service.config.LinkProperties;
 import gov.va.api.health.vistafhirquery.service.controller.R4Bundler;
+import gov.va.api.health.vistafhirquery.service.controller.R4BundlerFactory;
 import gov.va.api.health.vistafhirquery.service.controller.R4Bundling;
 import gov.va.api.health.vistafhirquery.service.controller.R4Transformation;
 import gov.va.api.health.vistafhirquery.service.controller.ResourceExceptions;
@@ -17,9 +17,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +47,14 @@ import org.springframework.web.bind.annotation.RestController;
 @AllArgsConstructor(onConstructor_ = @Autowired)
 @Builder
 public class R4ObservationController {
-  private final VistalinkApiClient vistalinkApiClient;
 
-  private final LinkProperties linkProperties;
+  @NonNull private final R4BundlerFactory bundlerFactory;
 
-  private final VitalVuidMapper vitalVuids;
+  @NonNull private final VistalinkApiClient vistalinkApiClient;
 
-  private final WitnessProtection witnessProtection;
+  @NonNull private final VitalVuidMapper vitalVuids;
+
+  @NonNull private final WitnessProtection witnessProtection;
 
   private VistaIdentifierSegment parseOrDie(String publicId) {
     try {
@@ -97,9 +100,11 @@ public class R4ObservationController {
   @GetMapping(params = {"patient"})
   public Observation.Bundle searchByPatient(
       @RequestParam(name = "patient") String patient,
-      @RequestParam(name = "_count", required = false) @Min(0) Integer count) {
-    int countValue = count == null ? linkProperties.getDefaultPageSize() : count;
-    Map<String, String> parameters = Map.of("patient", patient, "_count", "" + countValue);
+      @RequestParam(name = "_count", required = false) @Min(0) Integer count,
+      HttpServletRequest request) {
+
+    // int count =
+    //        HttpRequestParameters.integer(request, "_count", linkProperties.getDefaultPageSize());
     // Default .max() value is 9999
     RpcResponse rpcResponse =
         vistalinkApiClient.requestForPatient(
@@ -111,19 +116,17 @@ public class R4ObservationController {
                 .asDetails());
     VprGetPatientData.Response vprPatientData =
         VprGetPatientData.create().fromResults(rpcResponse.results());
-    return toBundle(parameters).apply(vprPatientData);
+    return toBundle(request).apply(vprPatientData);
   }
 
   private R4Bundler<VprGetPatientData.Response, Observation, Observation.Entry, Observation.Bundle>
-      toBundle(Map<String, String> parameters) {
-    return R4Bundler.forTransformation(transformation(parameters.get("patient")))
+      toBundle(HttpServletRequest request) {
+    return bundlerFactory
+        .forTransformation(transformation(request.getParameter("patient")))
         .bundling(
-            R4Bundling.newBundle(Observation.Bundle::new)
-                .newEntry(Observation.Entry::new)
-                .linkProperties(linkProperties)
-                .build())
+            R4Bundling.newBundle(Observation.Bundle::new).newEntry(Observation.Entry::new).build())
         .resourceType("Observation")
-        .parameters(parameters)
+        .request(request)
         .build();
   }
 
