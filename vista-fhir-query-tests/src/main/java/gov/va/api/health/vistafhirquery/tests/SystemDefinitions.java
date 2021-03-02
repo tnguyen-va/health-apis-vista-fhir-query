@@ -46,13 +46,6 @@ public final class SystemDefinitions {
         .build();
   }
 
-  private static TestIds syntheticIds() {
-    return TestIds.builder()
-        .patient("1011537977V693883")
-        .observation("I2-IBV5HN7B4CKF4XNL7GXDCWZNPD2T3WDMVHZZSIIBWTK3PXVFONYQ0000")
-        .build();
-  }
-
   private static ServiceDefinition serviceDefinition(
       String name, String url, int port, String accessToken, String apiPath) {
     return SentinelProperties.forName(name)
@@ -82,6 +75,13 @@ public final class SystemDefinitions {
         .r4(serviceDefinition("r4", url, 443, magicAccessToken(), "/vista-fhir-query/r4"))
         .publicIds(syntheticIds())
         .clientKey(clientKey())
+        .build();
+  }
+
+  private static TestIds syntheticIds() {
+    return TestIds.builder()
+        .patient("1011537977V693883")
+        .observation("I2-IBV5HN7B4CKF4XNL7GXDCWZNPD2T3WDMVHZZSIIBWTK3PXVFONYQ0000")
         .build();
   }
 
