@@ -1,6 +1,6 @@
 package gov.va.api.health.vistafhirquery.service.controller;
 
-import static gov.va.api.lighthouse.vistalink.api.RpcResponse.Status.FAILED;
+import static gov.va.api.lighthouse.charon.api.RpcResponse.Status.FAILED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,29 +8,29 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import gov.va.api.health.vistafhirquery.service.config.VistalinkApiConfig;
-import gov.va.api.lighthouse.vistalink.api.RpcDetails;
-import gov.va.api.lighthouse.vistalink.api.RpcInvocationResult;
-import gov.va.api.lighthouse.vistalink.api.RpcResponse;
+import gov.va.api.health.vistafhirquery.service.config.VistaApiConfig;
+import gov.va.api.lighthouse.charon.api.RpcDetails;
+import gov.va.api.lighthouse.charon.api.RpcInvocationResult;
+import gov.va.api.lighthouse.charon.api.RpcResponse;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-public class RestVistalinkApiClientTest {
+public class RestVistaApiClientTest {
   RestTemplate rt = mock(RestTemplate.class);
 
-  VistalinkApiConfig config =
-      VistalinkApiConfig.builder()
+  VistaApiConfig config =
+      VistaApiConfig.builder()
           .url("http://fugazi.com/")
           .accessCode("ac")
           .verifyCode("vc")
           .clientKey("ck")
           .build();
 
-  private RestVistalinkApiClient client() {
-    return RestVistalinkApiClient.builder().config(config).restTemplate(rt).build();
+  private RestVistaApiClient client() {
+    return RestVistaApiClient.builder().config(config).restTemplate(rt).build();
   }
 
   void mockVistalink200Response() {
