@@ -119,9 +119,7 @@ public class R4Transformers {
     return Optional.of(maybeInstant.toString());
   }
 
-  /**
-   * Take an instant and from a local-fileman-date macro that charon can consume.
-   */
+  /** Take an instant and from a local-fileman-date macro that charon can consume. */
   public static Optional<String> toLocalDateMacroString(Instant maybeInstant) {
     if (maybeInstant == null) {
       return Optional.empty();
