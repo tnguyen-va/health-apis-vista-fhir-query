@@ -1,5 +1,7 @@
 package gov.va.api.health.vistafhirquery.service.controller;
 
+import static org.apache.commons.lang3.StringUtils.trimToNull;
+
 import gov.va.api.health.vistafhirquery.service.config.VistaApiConfig;
 import gov.va.api.lighthouse.charon.api.RpcDetails;
 import gov.va.api.lighthouse.charon.api.RpcPrincipal;
@@ -28,6 +30,14 @@ public class RestVistaApiClient implements VistalinkApiClient {
 
   private VistaApiConfig config;
 
+  private RpcPrincipal authenticationCredentials() {
+    return RpcPrincipal.builder()
+        .applicationProxyUser(trimToNull(config().getApplicationProxyUser()))
+        .accessCode(config().getAccessCode())
+        .verifyCode(config().getVerifyCode())
+        .build();
+  }
+
   @SneakyThrows
   private RequestEntity<RpcRequest> buildRequestEntity(RpcRequest body) {
     var baseUrl = config().getUrl();
@@ -53,11 +63,7 @@ public class RestVistaApiClient implements VistalinkApiClient {
   public RpcResponse requestForPatient(String patient, RpcDetails rpcDetails) {
     RpcRequest rpcRequest =
         RpcRequest.builder()
-            .principal(
-                RpcPrincipal.builder()
-                    .accessCode(config().getAccessCode())
-                    .verifyCode(config().getVerifyCode())
-                    .build())
+            .principal(authenticationCredentials())
             .target(RpcVistaTargets.builder().forPatient(patient).build())
             .rpc(rpcDetails)
             .build();
@@ -68,11 +74,7 @@ public class RestVistaApiClient implements VistalinkApiClient {
   public RpcResponse requestForVistaSite(String vistaSite, RpcDetails rpcDetails) {
     RpcRequest rpcRequest =
         RpcRequest.builder()
-            .principal(
-                RpcPrincipal.builder()
-                    .accessCode(config().getAccessCode())
-                    .verifyCode(config().getVerifyCode())
-                    .build())
+            .principal(authenticationCredentials())
             .target(RpcVistaTargets.builder().include(List.of(vistaSite)).build())
             .rpc(rpcDetails)
             .build();

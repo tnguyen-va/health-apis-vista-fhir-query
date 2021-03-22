@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties
 @ConfigurationProperties("vista.api")
 public class VistaApiConfig {
-
   private String url;
 
   private String clientKey;
@@ -26,4 +25,6 @@ public class VistaApiConfig {
   private String accessCode;
 
   private String verifyCode;
+
+  private String applicationProxyUser;
 }
