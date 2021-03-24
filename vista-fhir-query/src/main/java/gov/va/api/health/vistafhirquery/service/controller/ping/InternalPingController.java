@@ -23,8 +23,6 @@ public class InternalPingController {
 
   private final VistalinkApiClient vistalinkApiClient;
 
-  private final VistaApiConfig vistaApiConfig;
-
   /** Ping All VistA sites for a given patient. */
   @SneakyThrows
   @GetMapping(value = "/ping/{icn}")
