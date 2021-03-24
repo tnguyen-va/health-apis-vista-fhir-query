@@ -4,6 +4,7 @@ import static gov.va.api.health.vistafhirquery.service.controller.R4Transformers
 import static java.util.stream.Collectors.toSet;
 
 import gov.va.api.health.r4.api.resources.Observation;
+import gov.va.api.health.vistafhirquery.service.config.VistaApiConfig;
 import gov.va.api.health.vistafhirquery.service.controller.DateSearchBoundaries;
 import gov.va.api.health.vistafhirquery.service.controller.R4Bundler;
 import gov.va.api.health.vistafhirquery.service.controller.R4BundlerFactory;
@@ -50,16 +51,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(
     value = "/r4/Observation",
     produces = {"application/json", "application/fhir+json"})
-@AllArgsConstructor(onConstructor_ = @Autowired)
+@AllArgsConstructor(onConstructor_ = {@Autowired, @NonNull})
 @Builder
 public class R4ObservationController {
-  @NonNull private final R4BundlerFactory bundlerFactory;
+  private final R4BundlerFactory bundlerFactory;
 
-  @NonNull private final VistalinkApiClient vistalinkApiClient;
+  private final VistalinkApiClient vistalinkApiClient;
 
-  @NonNull private final VitalVuidMapper vitalVuids;
+  private final VitalVuidMapper vitalVuids;
 
-  @NonNull private final WitnessProtection witnessProtection;
+  private final WitnessProtection witnessProtection;
+
+  private final VistaApiConfig vistaApiConfig;
 
   private Set<VprGetPatientData.Domains> categoryIs(String categoryCsv) {
     if (categoryCsv == null) {
@@ -94,12 +97,11 @@ public class R4ObservationController {
         vistalinkApiClient.requestForVistaSite(
             ids.vistaSiteId(),
             VprGetPatientData.Request.builder()
-                .context(Optional.of("LHS RPC CONTEXT"))
+                .context(Optional.ofNullable(vistaApiConfig.getApplicationProxyUserContext()))
                 .dfn(VprGetPatientData.Request.PatientId.forIcn(ids.patientIdentifier()))
                 .type(Set.of(ids.vprRpcDomain()))
                 .id(Optional.of(ids.vistaRecordId()))
-                .build()
-                .asDetails());
+                .build());
     VprGetPatientData.Response vprPatientData =
         VprGetPatientData.create().fromResults(rpcResponse.results());
     List<Observation> resources =
@@ -134,13 +136,12 @@ public class R4ObservationController {
         vistalinkApiClient.requestForPatient(
             patient,
             VprGetPatientData.Request.builder()
-                .context(Optional.of("LHS RPC CONTEXT"))
+                .context(Optional.ofNullable(vistaApiConfig.getApplicationProxyUserContext()))
                 .dfn(VprGetPatientData.Request.PatientId.forIcn(patient))
                 .type(categoryTypes)
                 .start(toLocalDateMacroString(boundaries.start()))
                 .stop(toLocalDateMacroString(boundaries.stop()))
-                .build()
-                .asDetails());
+                .build());
     VprGetPatientData.Response vprPatientData =
         VprGetPatientData.create().fromResults(rpcResponse.results());
     return toBundle(request).apply(vprPatientData);
