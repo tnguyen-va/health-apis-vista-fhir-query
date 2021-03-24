@@ -32,9 +32,7 @@ public class InternalPingController {
     RpcResponse response =
         vistalinkApiClient.requestForPatient(
             icn,
-            XobvTestPing.Request.builder()
-                .context(Optional.ofNullable(vistaApiConfig.getApplicationProxyUserContext()))
-                .build());
+            XobvTestPing.Request.builder().build());
     return response.results();
   }
 }
