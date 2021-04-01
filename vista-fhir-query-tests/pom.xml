@@ -33,6 +33,11 @@
     </dependency>
     <dependency>
       <groupId>gov.va.api.health</groupId>
+      <artifactId>test-support</artifactId>
+      <version>${fhir-resources.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>gov.va.api.health</groupId>
       <artifactId>vista-fhir-query</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
